@@ -1,0 +1,123 @@
+from re import A
+from unittest import result
+import cv2
+import time
+import numpy as np
+from pyzbar.pyzbar import decode 
+from os import walk
+
+
+# Função para leitura dos pixeis
+def verficamatrix(li,linhafin,co,colunafin):
+    colunaini=co
+    negativo=0
+    positivo=0
+    while li < linhafin:
+        while co < colunafin:
+            if img[li,co][0]>200:   
+                negativo=negativo+1    
+                #image.itemset((li, co, 0), 0) #Set B to 255     # define a cor vermelho para onde não encontrou
+                #image.itemset((li, co, 1), 0) #Set G to 255
+                #image.itemset((li, co, 2), 255) #Set R to 255
+            if img[li,co][0]<=200:  
+                positivo=positivo+1    
+                #image.itemset((li, co, 0), 0)                   # define a cor verde para onde encontrou
+                #image.itemset((li, co, 1), 255) 
+                #image.itemset((li, co, 2), 0)
+            co= co+1
+        co=colunaini  # Reseta a coluna
+        li=li+1
+
+    if positivo>(positivo+negativo)*0.35:
+        return True
+    else:
+        return False
+
+def BarcodeReader(): 
+    
+    detectedBarcodes = decode(fatia) 
+       
+    if not detectedBarcodes: 
+        print("Barcode Not Detected or your barcode is blank/corrupted!") 
+    else: 
+      for barcode in detectedBarcodes:   
+                (x, y, w, h) = barcode.rect 
+                cv2.rectangle(img, (x-10, y-10), 
+                          (x + w+10, y + h+10),  
+                          (255, 0, 0), 2) 
+                
+                if barcode.data!="": 
+                    x=str(barcode.data)
+                    resultado = ''.join(filter(lambda i: i if i.isdigit() else None, x))
+                    return resultado
+
+import os
+pasta = './teste'
+for diretorio, subpastas, arquivos in os.walk(pasta):
+    for arquivo in arquivos:
+        inicio= time.time()
+        img = cv2.imread('teste/'+arquivo) 
+        
+        image = cv2.medianBlur(img, 35)   #mediana
+        li = [0,1402,1477,1553,1630,1708,1786,1864,1940,2020,2093,2176,2250,2326,2405,2482,2555,2638,2716,2797,2874]
+        ci = [0,762,842,923,1002,1083,1346,1426,1507,1587,1666]
+        lf = [0,1424,1499,1577,1654,1732,1809,1888,1963,2043,2118,2198,2275,2350,2429,2507,2579,2662,2740,2821,2896]
+        cf = [0,785,865,947,1026,1107,1369,1450,1530,1611,1692]
+        x,y= 1,1
+        final=respota = ''
+        resultadoq=0
+
+        while x < 21:     #loop para ler as questões 01-20
+            while y < 6:
+                resultadoq = verficamatrix(int(image.shape[0]*li[x]), int(image.shape[0]*lf[x]),    int(image.shape[1]*ci[y]),    int(image.shape[1]*cf[y]))
+                
+                if resultadoq:
+                    if y==1:
+                        respota = 'a'
+                    if y==2:
+                        respota = respota+'b'
+                    if y==3:
+                        respota = respota+'c'
+                    if y==4:
+                        respota = respota+'d'
+                    if y==5:
+                        respota = respota+'e'
+                y=y+1
+            y=1
+            x=x+1
+            final = final+respota+';'
+            respota = ''
+
+        x,y= 1,6
+        while x < 21:    #loop para ler as questões 21-40
+            while y < 11:
+                resultadoq = verficamatrix(int(image.shape[0]*li[x]), int(image.shape[0]*lf[x]),    int(image.shape[1]*ci[y]),    int(image.shape[1]*cf[y]))
+                
+                if resultadoq:
+                    if y==6:
+                        respota = respota+'a'
+                    if y==7:
+                        respota = respota+'b'
+                    if y==8:
+                        respota = respota+'c'
+                    if y==9:
+                        respota = respota+'d'
+                    if y==10: 
+                        respota = respota+'e'
+                y=y+1  
+            y=6
+            
+            x=x+1
+            final = final+respota+';'
+            respota = ''
+
+
+        fatia = img[int(image.shape[0]*0.05):int(image.shape[0]*0.12), int(image.shape[1]*0.1):int(image.shape[1]*0.3)]
+
+        #cv2.imwrite("resultado.bmp", image)    #Caso deseja imprimir a pagina com as respostas marcadas, necessita tirar os cometarios da função printnp tambem
+
+        image="Img.jpg"
+        resultado=BarcodeReader() 
+        tfinal=time.time()
+        tempo = tfinal-inicio
+        print(resultado,';',final,';',tempo)
